@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm run:*)",
+      "Bash(curl:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(node -e ':*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(where git:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}

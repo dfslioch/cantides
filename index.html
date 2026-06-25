@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a6b8a" />
+  <meta name="description" content="Canadian tide predictions for coastal stations" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <title>CanTides</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="nav-back hidden" id="btn-back" aria-label="Go back">&#8592;</button>
+      <h1 class="app-title">CanTides</h1>
+      <button class="btn-icon" id="btn-settings" aria-label="Settings">&#9881;</button>
+    </header>
+
+    <main id="main-content">
+      <!-- Views rendered here by JS -->
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-view="home">
+        <span class="nav-icon">&#9733;</span>
+        <span class="nav-label">Favorites</span>
+      </button>
+      <button class="nav-item" data-view="search">
+        <span class="nav-icon">&#128269;</span>
+        <span class="nav-label">Browse</span>
+      </button>
+      <button class="nav-item" data-view="nearby">
+        <span class="nav-icon">&#127961;</span>
+        <span class="nav-label">Nearby</span>
+      </button>
+    </nav>
+
+    <!-- Settings panel (hidden by default) -->
+    <div id="settings-panel" class="settings-panel hidden" role="dialog" aria-label="Settings">
+      <div class="settings-content">
+        <div class="settings-header">
+          <h2>Settings</h2>
+          <button id="btn-close-settings" aria-label="Close settings">&times;</button>
+        </div>
+        <div class="setting-row">
+          <label>Datum</label>
+          <select id="setting-datum">
+            <option value="CD">Chart Datum (CD)</option>
+            <option value="MLLW">MLLW</option>
+            <option value="MSL">MSL</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>Units</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-value="m" id="unit-m">Metres</button>
+            <button class="toggle-btn" data-value="ft" id="unit-ft">Feet</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label>Time</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-value="24" id="time-24">24hr</button>
+            <button class="toggle-btn" data-value="12" id="time-12">12hr</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

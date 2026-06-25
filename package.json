@@ -1,0 +1,1 @@
+{"name":"cantides","private":true,"version":"0.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},"devDependencies":{"vite":"^6.0.0","vite-plugin-pwa":"^0.21.0"},"dependencies":{"chart.js":"^4.4.0","chartjs-adapter-date-fns":"^3.0.0","chartjs-plugin-annotation":"^3.1.0","date-fns":"^4.4.0"}}
