@@ -31,7 +31,11 @@ export function formatDate(isoString) {
 
 export function formatDayKey(isoString) {
   const d = new Date(isoString);
-  return d.toISOString().slice(0, 10);
+  // Use local date parts, not UTC — avoids split groups when local and UTC dates differ
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** ISO string for N hours from now */
