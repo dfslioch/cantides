@@ -14,7 +14,6 @@ const dayLabelsPlugin = {
     ctx.fillStyle = 'rgba(138,155,176,0.9)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    // Draw in the padding below the axis tick labels
     const y = chartArea.bottom + 36;
     for (const midnight of midnights) {
       const xPx = x.getPixelForValue(midnight.getTime());
@@ -27,11 +26,17 @@ const dayLabelsPlugin = {
 };
 
 Chart.register(Annotation, dayLabelsPlugin);
-import { getHiLo, getWaterLevels } from '../services/api.js';
+
+import { getHiLo, getWaterLevels, getStation } from '../services/api.js';
 import { isFavorite, addFavorite, removeFavorite, getSettings } from '../services/storage.js';
 import { formatTime, formatDateTime, formatHeight, formatDate, formatDayKey, hoursFromNow, startOfDay } from '../services/format.js';
 
 let _chart = null;
+
+/** True if this station has tide predictions */
+export function hasPredictions(station) {
+  return station.timeSeries?.some(t => t.code === 'wlp-hilo') ?? false;
+}
 
 export async function renderTideView(container, station, settings) {
   if (!settings) settings = getSettings();
@@ -39,18 +44,21 @@ export async function renderTideView(container, station, settings) {
 
   const displayName = station.officialName ?? station.name ?? station.id;
   const fav = isFavorite(station.id);
+  const predicting = hasPredictions(station);
 
   container.innerHTML = `
     <div class="card">
       <div style="display:flex;align-items:flex-start;gap:8px">
         <div style="flex:1">
           <div class="tide-station-name">${displayName}</div>
-          <div class="tide-station-meta">Station ${station.id} · Datum: ${datum}</div>
+          <div class="tide-station-meta">Station ${station.code ?? station.id} · Datum: ${datum}</div>
         </div>
         <button class="fav-btn ${fav ? 'active' : ''}" id="fav-toggle" title="Favorite">★</button>
       </div>
+      <div id="tz-notice"></div>
     </div>
 
+    ${predicting ? `
     <div class="card">
       <div class="hilo-section">
         <h3>Current Window</h3>
@@ -68,14 +76,23 @@ export async function renderTideView(container, station, settings) {
         <h3>7-Day Forecast</h3>
         <table class="week-table">
           <thead>
-            <tr><th>Type</th><th>Time</th><th>Height</th></tr>
+            <tr><th>Type</th><th>Time</th><th>Height</th><th class="sparkline-col"></th></tr>
           </thead>
           <tbody id="week-tbody">
-            <tr><td colspan="3" class="loading">Loading…</td></tr>
+            <tr><td colspan="4" class="loading">Loading…</td></tr>
           </tbody>
         </table>
       </div>
-    </div>`;
+    </div>` : `
+    <div class="card">
+      <div class="obs-only-notice">
+        <div class="obs-only-icon">📡</div>
+        <div>
+          <strong>Observation station only</strong>
+          <p>Tide predictions are not available for this station. It records water level observations only.</p>
+        </div>
+      </div>
+    </div>`}`;
 
   // Favorite toggle
   const favBtn = container.querySelector('#fav-toggle');
@@ -89,13 +106,30 @@ export async function renderTideView(container, station, settings) {
     }
   });
 
+  // Timezone check — fetch full station record in background
+  getStation(station.id).then(full => {
+    const stationTz = full?.timeZone;
+    if (!stationTz) return;
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (stationTz !== deviceTz) {
+      const notice = container.querySelector('#tz-notice');
+      if (notice) {
+        notice.innerHTML = `<div class="tz-notice">
+          ⚠ Station timezone: <strong>${stationTz}</strong> — your device is set to <strong>${deviceTz}</strong>.
+          Times shown are in your device's local time.
+        </div>`;
+      }
+    }
+  }).catch(() => {});
+
+  if (!predicting) return;
+
   // Date ranges
   const chartFrom = hoursFromNow(-12);
-  const chartTo = hoursFromNow(24);
-  const weekFrom = startOfDay(0);
-  const weekTo = startOfDay(7);
+  const chartTo   = hoursFromNow(24);
+  const weekFrom  = startOfDay(0);
+  const weekTo    = startOfDay(7);
 
-  // Fetch all data in parallel
   const [chartLevels, hiloToday, hiloWeek] = await Promise.allSettled([
     getWaterLevels(station.id, chartFrom, chartTo, datum),
     getHiLo(station.id, chartFrom, chartTo, datum),
@@ -107,6 +141,8 @@ export async function renderTideView(container, station, settings) {
   renderWeekTable(container, hiloWeek, settings);
 }
 
+// ─── Chart ────────────────────────────────────────────────────────────────────
+
 function renderChart(container, levelsResult, hiloResult, settings) {
   const canvas = container.querySelector('#tide-chart');
   if (!canvas) return;
@@ -114,7 +150,7 @@ function renderChart(container, levelsResult, hiloResult, settings) {
   if (_chart) { _chart.destroy(); _chart = null; }
 
   const levels = levelsResult.status === 'fulfilled' ? levelsResult.value : [];
-  const hilo = hiloResult.status === 'fulfilled' ? hiloResult.value : [];
+  const hilo   = hiloResult.status === 'fulfilled'   ? hiloResult.value   : [];
 
   if (levels.length === 0) {
     canvas.parentElement.innerHTML = '<div class="error-msg">Chart data unavailable</div>';
@@ -122,16 +158,13 @@ function renderChart(container, levelsResult, hiloResult, settings) {
   }
 
   const toHeight = v => settings.units === 'ft' ? v * 3.28084 : v;
-
-  const labels = levels.map(p => new Date(p.eventDate ?? p.timestamp ?? p.time));
-  const data = levels.map(p => toHeight(p.value));
-
-  const nowX = new Date();
+  const labels     = levels.map(p => new Date(p.eventDate));
+  const data       = levels.map(p => toHeight(p.value));
+  const nowX       = new Date();
   const chartStart = labels[0];
   const chartEnd   = labels[labels.length - 1];
   const midnights  = getMidnights(chartStart, chartEnd);
 
-  // Annotation points for hi/lo
   const hiloPoints = hilo.map(e => ({
     x: new Date(e.eventDate),
     y: toHeight(e.value),
@@ -142,18 +175,16 @@ function renderChart(container, levelsResult, hiloResult, settings) {
     type: 'line',
     data: {
       labels,
-      datasets: [
-        {
-          label: `Water Level (${settings.units})`,
-          data,
-          borderColor: '#7ecfe0',
-          backgroundColor: 'rgba(126,207,224,0.12)',
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: true,
-          tension: 0.4,
-        },
-      ],
+      datasets: [{
+        label: `Water Level (${settings.units})`,
+        data,
+        borderColor: '#7ecfe0',
+        backgroundColor: 'rgba(126,207,224,0.12)',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4,
+      }],
     },
     options: {
       responsive: true,
@@ -173,11 +204,7 @@ function renderChart(container, levelsResult, hiloResult, settings) {
       },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.parsed.y.toFixed(2)} ${settings.units}`,
-          },
-        },
+        tooltip: { callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)} ${settings.units}` } },
         dayLabels: { midnights },
         annotation: buildAnnotations(nowX, hiloPoints, chartStart, chartEnd, midnights),
       },
@@ -187,93 +214,60 @@ function renderChart(container, levelsResult, hiloResult, settings) {
 
 function buildAnnotations(nowX, hiloPoints, chartStart, chartEnd, midnights) {
   const annotations = {};
-
-  // --- Day bands: alternating shaded boxes (dates shown on x-axis, not here) ---
   const bandBoundaries = [chartStart, ...midnights, chartEnd];
   for (let i = 0; i < bandBoundaries.length - 1; i++) {
     annotations[`band_${i}`] = {
       type: 'box',
-      xMin: bandBoundaries[i],
-      xMax: bandBoundaries[i + 1],
+      xMin: bandBoundaries[i], xMax: bandBoundaries[i + 1],
       backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.12)',
       borderWidth: 0,
     };
   }
-
-  // --- Midnight divider lines ---
   for (const [i, midnight] of midnights.entries()) {
     annotations[`midnight_${i}`] = {
-      type: 'line',
-      xMin: midnight,
-      xMax: midnight,
-      borderColor: 'rgba(255,255,255,0.15)',
-      borderWidth: 1,
-      borderDash: [3, 3],
+      type: 'line', xMin: midnight, xMax: midnight,
+      borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [3, 3],
     };
   }
-
-  // --- Now line ---
   annotations.nowLine = {
-    type: 'line',
-    xMin: nowX,
-    xMax: nowX,
-    borderColor: '#ffffff',
-    borderWidth: 2,
+    type: 'line', xMin: nowX, xMax: nowX,
+    borderColor: '#ffffff', borderWidth: 2,
     label: {
-      display: true,
-      content: 'Now',
-      position: 'start',
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      color: '#ffffff',
-      font: { size: 11, weight: 'bold' },
-      padding: { x: 6, y: 3 },
-      yAdjust: 8,
+      display: true, content: 'Now', position: 'start',
+      backgroundColor: 'rgba(255,255,255,0.15)', color: '#ffffff',
+      font: { size: 11, weight: 'bold' }, padding: { x: 6, y: 3 }, yAdjust: 8,
     },
   };
-
-  // --- Hi/Lo dots ---
   for (const [i, pt] of hiloPoints.entries()) {
     annotations[`hilo_${i}`] = {
-      type: 'point',
-      xValue: pt.x,
-      yValue: pt.y,
+      type: 'point', xValue: pt.x, yValue: pt.y,
       backgroundColor: pt.type === 'HIGH' ? '#4fc3f7' : '#81c784',
       borderColor:     pt.type === 'HIGH' ? '#4fc3f7' : '#81c784',
       radius: 5,
     };
   }
-
   return { annotations };
 }
 
-/** Return Date objects for each midnight between start and end (exclusive of endpoints) */
 function getMidnights(start, end) {
   const midnights = [];
   const d = new Date(start);
-  // Advance to next midnight
   d.setHours(24, 0, 0, 0);
-  while (d < end) {
-    midnights.push(new Date(d));
-    d.setDate(d.getDate() + 1);
-  }
+  while (d < end) { midnights.push(new Date(d)); d.setDate(d.getDate() + 1); }
   return midnights;
 }
+
+// ─── Current Window hi/lo grid ────────────────────────────────────────────────
 
 function renderTodayHiLo(container, hiloResult, settings) {
   const grid = container.querySelector('#today-hilo');
   if (!grid) return;
-
   if (hiloResult.status === 'rejected') {
     grid.innerHTML = '<div class="error-msg" style="grid-column:1/-1">Failed to load hi/lo data</div>';
     return;
   }
-
   const events = hiloResult.value;
-  if (events.length === 0) {
-    grid.innerHTML = '<div class="station-meta">No data</div>';
-    return;
-  }
-
+  if (events.length === 0) { grid.innerHTML = '<div class="station-meta">No data</div>'; return; }
   grid.innerHTML = events.map(e => `
     <div class="hilo-item">
       <div class="hilo-type ${e.type === 'HIGH' ? 'H' : 'L'}">${e.type === 'HIGH' ? 'High' : 'Low'}</div>
@@ -282,35 +276,91 @@ function renderTodayHiLo(container, hiloResult, settings) {
     </div>`).join('');
 }
 
+// ─── 7-day table with sparklines ─────────────────────────────────────────────
+
 function renderWeekTable(container, hiloResult, settings) {
   const tbody = container.querySelector('#week-tbody');
   if (!tbody) return;
-
   if (hiloResult.status === 'rejected') {
-    tbody.innerHTML = '<tr><td colspan="3" class="error-msg">Failed to load weekly data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="error-msg">Failed to load weekly data</td></tr>';
     return;
   }
-
   const events = hiloResult.value;
-  if (events.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3">No data</td></tr>';
-    return;
+  if (events.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No data</td></tr>'; return; }
+
+  // Group events by calendar day
+  const byDay = new Map();
+  for (const e of events) {
+    const key = formatDayKey(e.eventDate);
+    if (!byDay.has(key)) byDay.set(key, { label: formatDate(e.eventDate), events: [] });
+    byDay.get(key).events.push(e);
   }
 
-  let lastDay = null;
   const rows = [];
-  for (const e of events) {
-    const day = formatDayKey(e.eventDate);
-    if (day !== lastDay) {
-      rows.push(`<tr class="day-separator"><td colspan="3">${formatDate(e.eventDate)}</td></tr>`);
-      lastDay = day;
-    }
+  for (const { label, events: dayEvents } of byDay.values()) {
+    // Pass all events for context so the sparkline curve is smooth at the edges
+    const svg = sparklineSVG(events, dayEvents);
     rows.push(`
-      <tr>
-        <td><span class="badge-${e.type === 'HIGH' ? 'H' : 'L'}">${e.type === 'HIGH' ? 'High' : 'Low'}</span></td>
-        <td>${formatTime(e.eventDate, settings)}</td>
-        <td>${formatHeight(e.value, settings)}</td>
+      <tr class="day-separator">
+        <td colspan="3">${label}</td>
+        <td class="sparkline-col">${svg}</td>
       </tr>`);
+    for (const e of dayEvents) {
+      rows.push(`
+        <tr>
+          <td><span class="badge-${e.type === 'HIGH' ? 'H' : 'L'}">${e.type === 'HIGH' ? 'High' : 'Low'}</span></td>
+          <td>${formatTime(e.eventDate, settings)}</td>
+          <td>${formatHeight(e.value, settings)}</td>
+          <td></td>
+        </tr>`);
+    }
   }
   tbody.innerHTML = rows.join('');
+}
+
+/**
+ * Build a smooth SVG sparkline for one day, using all events for curve continuity.
+ * Includes the nearest event outside the day window on each side so the curve
+ * enters/exits smoothly rather than starting/ending flat.
+ */
+function sparklineSVG(allEvents, dayEvents, w = 96, h = 30) {
+  if (dayEvents.length < 1) return '';
+
+  const dayStartMs = new Date(dayEvents[0].eventDate).setHours(0, 0, 0, 0);
+  const dayEndMs   = dayStartMs + 86400000;
+
+  // Collect day events + 1 neighbour on each side for smooth entry/exit
+  const pts = [];
+  let beforeIdx = -1;
+  for (let i = 0; i < allEvents.length; i++) {
+    const t = new Date(allEvents[i].eventDate).getTime();
+    if (t < dayStartMs) { beforeIdx = i; }
+    else if (t <= dayEndMs) { pts.push(allEvents[i]); }
+  }
+  const afterEvent = allEvents.find(e => new Date(e.eventDate).getTime() > dayEndMs);
+  if (beforeIdx >= 0) pts.unshift(allEvents[beforeIdx]);
+  if (afterEvent)     pts.push(afterEvent);
+
+  if (pts.length < 2) return '';
+
+  const values = pts.map(e => e.value);
+  const minV = Math.min(...values), maxV = Math.max(...values), rangeV = maxV - minV || 1;
+
+  const px = t => ((t - dayStartMs) / (dayEndMs - dayStartMs)) * w;
+  const py = v => (h - 3) - ((v - minV) / rangeV) * (h - 6) + 1;
+
+  const coords = pts.map(e => [px(new Date(e.eventDate).getTime()), py(e.value)]);
+
+  // Cubic bezier with vertical control points — gives smooth sine-like curves
+  let d = `M ${coords[0][0].toFixed(1)} ${coords[0][1].toFixed(1)}`;
+  for (let i = 1; i < coords.length; i++) {
+    const [x0, y0] = coords[i - 1];
+    const [x1, y1] = coords[i];
+    const cx = ((x0 + x1) / 2).toFixed(1);
+    d += ` C ${cx} ${y0.toFixed(1)}, ${cx} ${y1.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  }
+
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="sparkline-svg" aria-hidden="true">
+    <path d="${d}" stroke="#7ecfe0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
 }

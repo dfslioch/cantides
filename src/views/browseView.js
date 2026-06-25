@@ -1,4 +1,5 @@
 import { getStations } from '../services/api.js';
+import { hasPredictions } from './tideView.js';
 
 /**
  * Drill-down browser: Province/Region → Station
@@ -111,9 +112,9 @@ function renderStationList(container, stations, onSelectStation, onBack) {
     item.className = 'station-item';
     const displayName = s.officialName ?? s.name ?? s.id;
     item.innerHTML = `
-      <div>
-        <div class="station-name">${displayName}</div>
-        <div class="station-meta">${s.id ?? ''}</div>
+      <div style="flex:1">
+        <div class="station-name">${displayName}${hasPredictions(s) ? '' : ' <span class="badge-obs">Obs. only</span>'}</div>
+        <div class="station-meta">${s.code ?? ''}</div>
       </div>`;
     item.addEventListener('click', () => onSelectStation({ id: s.id, name: displayName, ...s }));
     container.appendChild(item);

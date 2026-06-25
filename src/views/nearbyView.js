@@ -1,5 +1,6 @@
 import { getStations } from '../services/api.js';
 import { getCurrentPosition, nearestStations } from '../services/geo.js';
+import { hasPredictions } from './tideView.js';
 
 // Persist results across back-navigation within the same session
 let _cachedResults = null; // { lat, lon, stations: [{...distanceKm}] }
@@ -58,7 +59,7 @@ function renderResults(container, { lat, lon, stations }, onSelectStation) {
     const displayName = s.officialName ?? s.name ?? s.id;
     item.innerHTML = `
       <div style="flex:1">
-        <div class="station-name">${displayName}</div>
+        <div class="station-name">${displayName}${hasPredictions(s) ? '' : ' <span class="badge-obs">Obs. only</span>'}</div>
         <div class="station-meta">${s.distanceKm.toFixed(1)} km away</div>
       </div>`;
     item.addEventListener('click', () => onSelectStation({ id: s.id, name: displayName, ...s }));

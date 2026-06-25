@@ -94,6 +94,15 @@ function updateToggleGroup(prefix, activeValue) {
   });
 }
 
+// ===== Offline banner =====
+const offlineBanner = document.getElementById('offline-banner');
+function updateOnlineStatus() {
+  offlineBanner.classList.toggle('hidden', navigator.onLine);
+}
+window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('online', updateOnlineStatus);
+updateOnlineStatus();
+
 // ===== Service Worker =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

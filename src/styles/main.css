@@ -349,6 +349,65 @@ body {
   color: #fff;
 }
 
+/* ===== Offline banner ===== */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: #b45309;
+  color: #fff;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 8px 16px;
+}
+.offline-banner:not(.hidden) ~ #app .app-header { top: 36px; }
+
+/* ===== Obs-only badge ===== */
+.badge-obs {
+  display: inline-block;
+  background: rgba(138,155,176,0.2);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ===== Obs-only notice in tide view ===== */
+.obs-only-notice {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+.obs-only-icon { font-size: 1.8rem; line-height: 1; }
+.obs-only-notice strong { display: block; margin-bottom: 4px; }
+.obs-only-notice p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+/* ===== Timezone notice ===== */
+.tz-notice {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(245,158,11,0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(245,158,11,0.25);
+}
+
+/* ===== Sparklines ===== */
+.sparkline-col {
+  width: 100px;
+  padding: 2px 0 2px 8px !important;
+  vertical-align: middle;
+}
+.sparkline-svg { display: block; }
+
 /* ===== Utility ===== */
 .hidden { display: none !important; }
 
