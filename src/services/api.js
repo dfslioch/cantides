@@ -92,3 +92,8 @@ export async function getWaterLevels(stationId, from, to, datum = 'CD') {
 export async function getStationMetadata(stationId) {
   return fetchJSON(`${BASE}/stations/${stationId}/metadata`);
 }
+
+/** True if this station has tide predictions (wlp-hilo time series) */
+export function hasPredictions(station) {
+  return station.timeSeries?.some(t => t.code === 'wlp-hilo') ?? false;
+}

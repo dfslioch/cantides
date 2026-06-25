@@ -402,11 +402,12 @@ body {
 
 /* ===== Sparklines ===== */
 .sparkline-col {
-  width: 100px;
-  padding: 2px 0 2px 8px !important;
+  width: 160px;
+  min-width: 120px;
+  padding: 4px 0 4px 8px !important;
   vertical-align: middle;
 }
-.sparkline-svg { display: block; }
+.sparkline-svg { display: block; width: 100%; }
 
 /* ===== Utility ===== */
 .hidden { display: none !important; }

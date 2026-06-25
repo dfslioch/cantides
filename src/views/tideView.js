@@ -27,16 +27,12 @@ const dayLabelsPlugin = {
 
 Chart.register(Annotation, dayLabelsPlugin);
 
-import { getHiLo, getWaterLevels, getStation, getStations } from '../services/api.js';
+import { getHiLo, getWaterLevels, getStation, getStations, hasPredictions } from '../services/api.js';
 import { isFavorite, addFavorite, removeFavorite, getSettings } from '../services/storage.js';
 import { formatTime, formatDateTime, formatHeight, formatDate, formatDayKey, hoursFromNow, startOfDay } from '../services/format.js';
 
 let _chart = null;
 
-/** True if this station has tide predictions */
-export function hasPredictions(station) {
-  return station.timeSeries?.some(t => t.code === 'wlp-hilo') ?? false;
-}
 
 export async function renderTideView(container, station, settings) {
   if (!settings) settings = getSettings();
@@ -327,14 +323,15 @@ function renderWeekTable(container, hiloResult, settings) {
 
 /**
  * Build a smooth SVG sparkline for one day, using all events for curve continuity.
- * Includes the nearest event outside the day window on each side so the curve
- * enters/exits smoothly rather than starting/ending flat.
+ * Width is expressed as a viewBox unit — CSS makes it fill the column.
+ * Tick marks at 06:00, 12:00, 18:00 give time reference.
  */
-function sparklineSVG(allEvents, dayEvents, w = 96, h = 30) {
+function sparklineSVG(allEvents, dayEvents, w = 240, h = 36) {
   if (dayEvents.length < 1) return '';
 
   const dayStartMs = new Date(dayEvents[0].eventDate).setHours(0, 0, 0, 0);
   const dayEndMs   = dayStartMs + 86400000;
+  const tickMs     = [6, 12, 18].map(h => dayStartMs + h * 3600000);
 
   // Collect day events + 1 neighbour on each side for smooth entry/exit
   const pts = [];
@@ -353,12 +350,12 @@ function sparklineSVG(allEvents, dayEvents, w = 96, h = 30) {
   const values = pts.map(e => e.value);
   const minV = Math.min(...values), maxV = Math.max(...values), rangeV = maxV - minV || 1;
 
-  const px = t => ((t - dayStartMs) / (dayEndMs - dayStartMs)) * w;
-  const py = v => (h - 3) - ((v - minV) / rangeV) * (h - 6) + 1;
+  const curveTop = 4, curveBot = h - 14; // leave 14px at bottom for tick labels
+  const px = t  => ((t - dayStartMs) / (dayEndMs - dayStartMs)) * w;
+  const py = v  => curveBot - ((v - minV) / rangeV) * (curveBot - curveTop);
 
   const coords = pts.map(e => [px(new Date(e.eventDate).getTime()), py(e.value)]);
 
-  // Cubic bezier with vertical control points — gives smooth sine-like curves
   let d = `M ${coords[0][0].toFixed(1)} ${coords[0][1].toFixed(1)}`;
   for (let i = 1; i < coords.length; i++) {
     const [x0, y0] = coords[i - 1];
@@ -367,7 +364,19 @@ function sparklineSVG(allEvents, dayEvents, w = 96, h = 30) {
     d += ` C ${cx} ${y0.toFixed(1)}, ${cx} ${y1.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
   }
 
-  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="sparkline-svg" aria-hidden="true">
+  // Tick marks + labels at 06, 12, 18
+  const tickLabels = ['6h', '12h', '18h'];
+  const ticks = tickMs.map((t, i) => {
+    const x = px(t).toFixed(1);
+    return `<line x1="${x}" y1="${curveBot + 2}" x2="${x}" y2="${curveBot + 5}" stroke="rgba(138,155,176,0.5)" stroke-width="1"/>
+            <text x="${x}" y="${h}" text-anchor="middle" font-size="8" fill="rgba(138,155,176,0.7)">${tickLabels[i]}</text>`;
+  }).join('');
+
+  // Baseline
+  const baseline = `<line x1="0" y1="${curveBot + 2}" x2="${w}" y2="${curveBot + 2}" stroke="rgba(138,155,176,0.2)" stroke-width="1"/>`;
+
+  return `<svg viewBox="0 0 ${w} ${h}" class="sparkline-svg" aria-hidden="true">
+    ${baseline}${ticks}
     <path d="${d}" stroke="#7ecfe0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </svg>`;
 }

@@ -1,6 +1,5 @@
-import { getStations } from '../services/api.js';
+import { getStations, hasPredictions } from '../services/api.js';
 import { getCurrentPosition, nearestStations } from '../services/geo.js';
-import { hasPredictions } from './tideView.js';
 
 // Persist results across back-navigation within the same session
 let _cachedResults = null; // { lat, lon, stations: [{...distanceKm}] }

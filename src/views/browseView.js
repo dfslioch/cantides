@@ -1,5 +1,4 @@
-import { getStations } from '../services/api.js';
-import { hasPredictions } from './tideView.js';
+import { getStations, hasPredictions } from '../services/api.js';
 
 /**
  * Drill-down browser: Province/Region → Station
