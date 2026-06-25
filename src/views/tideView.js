@@ -27,7 +27,7 @@ const dayLabelsPlugin = {
 
 Chart.register(Annotation, dayLabelsPlugin);
 
-import { getHiLo, getWaterLevels, getStation } from '../services/api.js';
+import { getHiLo, getWaterLevels, getStation, getStations } from '../services/api.js';
 import { isFavorite, addFavorite, removeFavorite, getSettings } from '../services/storage.js';
 import { formatTime, formatDateTime, formatHeight, formatDate, formatDayKey, hoursFromNow, startOfDay } from '../services/format.js';
 
@@ -41,6 +41,13 @@ export function hasPredictions(station) {
 export async function renderTideView(container, station, settings) {
   if (!settings) settings = getSettings();
   const { datum, units } = settings;
+
+  // Favorites only store {id, name} — look up the full record if timeSeries is missing
+  if (!station.timeSeries) {
+    const all = await getStations();
+    const full = all.find(s => s.id === station.id);
+    if (full) station = { ...station, ...full };
+  }
 
   const displayName = station.officialName ?? station.name ?? station.id;
   const fav = isFavorite(station.id);
