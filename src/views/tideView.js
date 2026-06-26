@@ -364,8 +364,9 @@ function sparklineSVG(allEvents, dayEvents, w = 240, h = 50) {
     d += ` C ${cx} ${y0.toFixed(1)}, ${cx} ${y1.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
   }
 
-  // Full-height vertical dividers at 06, 12, 18
-  const ticks = tickMs.map(t => {
+  // Full-height vertical dividers at 00, 06, 12, 18, 24
+  const allTickMs = [dayStartMs, ...tickMs, dayEndMs];
+  const ticks = allTickMs.map(t => {
     const x = px(t).toFixed(1);
     return `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="rgba(138,155,176,0.6)" stroke-width="1"/>`;
   }).join('');
