@@ -69,8 +69,9 @@ src/
     storage.js            — favorites + settings in localStorage
     geo.js                — geolocation + Haversine nearest-station sort
     format.js             — height/time/date formatting (all local-time aware)
+    sparkline.js          — shared SVG sparkline generator (used by homeView + tideView)
   views/
-    homeView.js           — favorites home screen with next high/low preview
+    homeView.js           — favorites home screen with next high/low preview + today sparkline
     browseView.js         — region drill-down + text search
     nearbyView.js         — GPS nearest stations (results cached in module scope)
     tideView.js           — main tide view: chart, current window, 7-day table + sparklines
@@ -87,8 +88,10 @@ public/
 - **Chart window:** −12h to +24h from now; downsampled wlp every 15th point
 - **Day bands:** alternating box annotations; midnight dates drawn by custom `dayLabels` plugin in bottom padding
 - **Hi/Lo type inference:** `inferHiLoTypes()` in api.js — first event vs neighbour, then strict alternating
-- **7-day table:** grouped by local calendar day; sparklines built from hi/lo data (no extra API call)
-- **Sparklines:** SVG, 240×50 viewBox, cubic bezier through hi/lo points + 1 neighbour each side; vertical dividers at 0h/6h/12h/18h/24h
+- **Current Window:** hi/lo grid covering −12h to +24h (same window as chart), labelled "Current Window" not "Today"
+- **7-day table:** grouped by local calendar day; sparklines (240×50) built from hi/lo data (no extra API call)
+- **Home screen:** fetches startOfDay(0) to hoursFromNow(36); sparkline (240×28) displayed to the right of station name; next hi/lo below
+- **Sparklines (shared):** `src/services/sparkline.js` — SVG, cubic bezier through hi/lo points + 1 neighbour each side; vertical dividers at 0h/6h/12h/18h/24h (full-height, opacity 0.6); baseline and topline framing the curve area
 - **Offline banner:** fixed amber bar, `navigator.onLine` events
 - **Timezone notice:** shown if station `timeZone` ≠ device timezone
 - **Obs-only stations:** badge in lists; notice card in tide view instead of chart

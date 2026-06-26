@@ -56,9 +56,10 @@ export function sparklineSVG(allEvents, dayEvents, w = 240, h = 50) {
   }).join('');
 
   const baseline = `<line x1="0" y1="${curveBot + 2}" x2="${w}" y2="${curveBot + 2}" stroke="rgba(138,155,176,0.5)" stroke-width="1"/>`;
+  const topline  = `<line x1="0" y1="${curveTop - 2}" x2="${w}" y2="${curveTop - 2}" stroke="rgba(138,155,176,0.5)" stroke-width="1"/>`;
 
   return `<svg viewBox="0 0 ${w} ${h}" class="sparkline-svg" aria-hidden="true">
-    ${baseline}${ticks}
+    ${baseline}${topline}${ticks}
     <path d="${d}" stroke="#7ecfe0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   </svg>`;
 }
