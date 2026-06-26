@@ -326,7 +326,7 @@ function renderWeekTable(container, hiloResult, settings) {
  * Width is expressed as a viewBox unit — CSS makes it fill the column.
  * Tick marks at 06:00, 12:00, 18:00 give time reference.
  */
-function sparklineSVG(allEvents, dayEvents, w = 240, h = 28) {
+function sparklineSVG(allEvents, dayEvents, w = 240, h = 50) {
   if (dayEvents.length < 1) return '';
 
   const dayStartMs = new Date(dayEvents[0].eventDate).setHours(0, 0, 0, 0);
@@ -350,7 +350,7 @@ function sparklineSVG(allEvents, dayEvents, w = 240, h = 28) {
   const values = pts.map(e => e.value);
   const minV = Math.min(...values), maxV = Math.max(...values), rangeV = maxV - minV || 1;
 
-  const curveTop = 4, curveBot = h - 6; // 6px margin at bottom for tick marks
+  const curveTop = 2, curveBot = h - 2;
   const px = t  => ((t - dayStartMs) / (dayEndMs - dayStartMs)) * w;
   const py = v  => curveBot - ((v - minV) / rangeV) * (curveBot - curveTop);
 
@@ -364,10 +364,10 @@ function sparklineSVG(allEvents, dayEvents, w = 240, h = 28) {
     d += ` C ${cx} ${y0.toFixed(1)}, ${cx} ${y1.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
   }
 
-  // Tick marks only at 06, 12, 18 — no labels
+  // Full-height vertical dividers at 06, 12, 18
   const ticks = tickMs.map(t => {
     const x = px(t).toFixed(1);
-    return `<line x1="${x}" y1="${curveBot + 1}" x2="${x}" y2="${curveBot + 5}" stroke="rgba(138,155,176,0.5)" stroke-width="1"/>`;
+    return `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="rgba(138,155,176,0.25)" stroke-width="1"/>`;
   }).join('');
 
   // Baseline
