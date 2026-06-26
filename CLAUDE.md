@@ -92,6 +92,7 @@ public/
 - **7-day table:** grouped by local calendar day; sparklines (240×50) built from hi/lo data (no extra API call)
 - **Home screen:** fetches startOfDay(0) to hoursFromNow(36); sparkline (240×28) displayed to the right of station name; next hi/lo below
 - **Sparklines (shared):** `src/services/sparkline.js` — SVG, cubic bezier through hi/lo points + 1 neighbour each side; vertical dividers at 0h/6h/12h/18h/24h (full-height, opacity 0.6); baseline and topline framing the curve area
+- **Home sparkline width:** fixed at 120px (`flex: 0 0 120px`); station name gets `flex: 1` so sparklines are consistent width regardless of name length
 - **Offline banner:** fixed amber bar, `navigator.onLine` events
 - **Timezone notice:** shown if station `timeZone` ≠ device timezone
 - **Obs-only stations:** badge in lists; notice card in tide view instead of chart
