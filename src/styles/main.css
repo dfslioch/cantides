@@ -407,10 +407,9 @@ body {
   gap: 12px;
   margin-bottom: 4px;
 }
-.home-card-header .tide-station-name { flex: 0 0 auto; }
+.home-card-header .tide-station-name { flex: 1; min-width: 0; }
 .home-sparkline {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 120px;
 }
 .home-sparkline .sparkline-svg { width: 100%; }
 
