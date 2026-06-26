@@ -400,6 +400,13 @@ body {
   border: 1px solid rgba(245,158,11,0.25);
 }
 
+/* ===== Home card sparkline ===== */
+.home-sparkline {
+  width: 100%;
+  margin-top: 4px;
+}
+.home-sparkline .sparkline-svg { width: 100%; }
+
 /* ===== Sparklines ===== */
 .sparkline-col {
   width: 160px;
