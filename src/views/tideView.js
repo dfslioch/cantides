@@ -367,11 +367,11 @@ function sparklineSVG(allEvents, dayEvents, w = 240, h = 50) {
   // Full-height vertical dividers at 06, 12, 18
   const ticks = tickMs.map(t => {
     const x = px(t).toFixed(1);
-    return `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="rgba(138,155,176,0.25)" stroke-width="1"/>`;
+    return `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="rgba(138,155,176,0.6)" stroke-width="1"/>`;
   }).join('');
 
   // Baseline
-  const baseline = `<line x1="0" y1="${curveBot + 2}" x2="${w}" y2="${curveBot + 2}" stroke="rgba(138,155,176,0.2)" stroke-width="1"/>`;
+  const baseline = `<line x1="0" y1="${curveBot + 2}" x2="${w}" y2="${curveBot + 2}" stroke="rgba(138,155,176,0.5)" stroke-width="1"/>`;
 
   return `<svg viewBox="0 0 ${w} ${h}" class="sparkline-svg" aria-hidden="true">
     ${baseline}${ticks}
