@@ -45,8 +45,11 @@ export function renderHomeView(container, { onSelectStation }) {
       const card = document.createElement('div');
       card.className = 'card card-clickable';
       card.innerHTML = `
-        <div class="tide-station-name">${fav.name}</div>
-        <div style="display:flex;gap:16px;margin-top:8px;margin-bottom:12px">
+        <div class="home-card-header">
+          <div class="tide-station-name">${fav.name}</div>
+          ${todayEvents.length ? `<div class="home-sparkline">${sparklineSVG(events, todayEvents, 240, 28)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px">
           ${nH ? `<div class="hilo-item" style="flex:1">
             <div class="hilo-type H">Next High</div>
             <div class="hilo-time">${formatTime(nH.eventDate, settings)}</div>
@@ -58,8 +61,7 @@ export function renderHomeView(container, { onSelectStation }) {
             <div class="hilo-height">${formatHeight(nL.value, settings)}</div>
           </div>` : ''}
           ${!nH && !nL ? '<div class="station-meta">No upcoming data</div>' : ''}
-        </div>
-        ${todayEvents.length ? `<div class="home-sparkline">${sparklineSVG(events, todayEvents)}</div>` : ''}`;
+        </div>`;
 
       card.addEventListener('click', () => onSelectStation(fav));
       container.appendChild(card);

@@ -401,9 +401,16 @@ body {
 }
 
 /* ===== Home card sparkline ===== */
+.home-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.home-card-header .tide-station-name { flex: 0 0 auto; }
 .home-sparkline {
-  width: 100%;
-  margin-top: 4px;
+  flex: 1;
+  min-width: 0;
 }
 .home-sparkline .sparkline-svg { width: 100%; }
 
